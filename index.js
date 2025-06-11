@@ -1,4 +1,3 @@
-
 const http = require("http");
 const axios = require("axios");
 
@@ -140,7 +139,7 @@ async function checkPlayerMilestone(currentPlayers) {
         color: 0xffd700,
         fields: [
           { name: "🎯 Milestone", value: `${milestone} players`, inline: true },
-          { name: "👥 Current", value: `${currentPlayers}/${gameData.maxPlayers}`, inline: true },
+          { name: "👥 Current", value: `${currentPlayers}`, inline: true },
           { name: "🕓 Time", value: nowLocale(), inline: true }
         ],
         footer: { text: "Player Milestone Alert" },
@@ -182,7 +181,7 @@ async function sendJoinEmbed(data) {
     description: `**${data.name}** now has **${data.playing}** players.`,
     color: 0x00ff00,
     fields: [
-      { name: "👥 Online", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👥 Online", value: `${data.playing}`, inline: true },
       { name: "👀 Visits", value: data.visits.toLocaleString(), inline: true },
       { name: "🕓 Time", value: nowLocale(), inline: true }
     ],
@@ -212,7 +211,7 @@ async function sendLeaveEmbed(data) {
     description: `**${data.name}** now has **${data.playing}** players.`,
     color: 0xff0000,
     fields: [
-      { name: "👥 Online", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👥 Online", value: `${data.playing}`, inline: true },
       { name: "🕓 Time", value: nowLocale(), inline: true }
     ],
     footer: { text: "Roblox Leave Alert" },
@@ -239,7 +238,7 @@ async function sendHourlyUpdate(data) {
     description: `**${data.name}** - Current Stats`,
     color: 0x3498db,
     fields: [
-      { name: "👥 Players", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👥 Players", value: `${data.playing}`, inline: true },
       { name: "👀 Visits", value: data.visits.toLocaleString(), inline: true },
       { name: "🕒 Time", value: nowLocale(), inline: true },
       { name: "🏆 Peak Today", value: `${dailyStats.peakPlayers}`, inline: true },
@@ -310,7 +309,7 @@ async function main() {
       description: `Now tracking **${gameData.name}**`,
       color: 0x2ecc71,
       fields: [
-        { name: "👥 Current Players", value: `${gameData.playing}/${gameData.maxPlayers}`, inline: true },
+        { name: "👥 Current Players", value: `${gameData.playing}`, inline: true },
         { name: "👀 Total Visits", value: gameData.visits.toLocaleString(), inline: true },
         { name: "🔄 Check Interval", value: `${checkInterval/1000}s`, inline: true }
       ],
