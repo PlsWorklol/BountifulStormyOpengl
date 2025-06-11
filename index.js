@@ -30,7 +30,7 @@ app.get("/ping", (req, res) => {
   res.send("✅ Ping OK");
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`🌍 Public URL: Visit this app at https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
 });
 
