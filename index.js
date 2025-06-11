@@ -2,7 +2,7 @@ const axios = require("axios");
 
 // === CONFIGURATION ===
 const placeId = "10627207685"; // Your Roblox Place ID
-const discordWebhook = ""; /https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch/ 
+const discordWebhook = "https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch"; 
 // ======================
 
 let lastCount = 0;
