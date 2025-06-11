@@ -79,7 +79,7 @@ async function sendJoinEmbed(data) {
     description: `**${data.name}** now has **${data.playing}** players.`,
     color: 0x00ff00,
     fields: [
-      { name: "👥 Online", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👥 Online", value: `${data.playing}`, inline: true },
       { name: "👀 Visits", value: data.visits.toLocaleString(), inline: true },
       { name: "🕓 Time", value: nowLocale(), inline: true }
     ],
@@ -96,7 +96,7 @@ async function sendLeaveEmbed(data) {
     description: `**${data.name}** now has **${data.playing}** players.`,
     color: 0xff0000,
     fields: [
-      { name: "👥 Online", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👥 Online", value: `${data.playing}`, inline: true },
       { name: "🕓 Time", value: nowLocale(), inline: true }
     ],
     footer: { text: "Roblox Leave Alert" },
@@ -111,7 +111,7 @@ async function sendHourlyUpdate(data) {
     description: `**${data.name}** - Current Stats`,
     color: 0x3498db,
     fields: [
-      { name: "👥 Players", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👥 Players", value: `${data.playing}`, inline: true },
       { name: "👀 Visits", value: data.visits.toLocaleString(), inline: true },
       { name: "🕒 Time", value: nowLocale(), inline: true }
     ],
