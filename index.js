@@ -1,18 +1,40 @@
+const express = require("express");
 const axios = require("axios");
+const app = express();
+const port = 3000;
 
 // === CONFIGURATION ===
 const placeId = "10627207685"; // Your Roblox Place ID
-const discordWebhook = "https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch"; 
-const checkInterval = 15000; // 15 seconds
-const enableLeaveNotifications = true; // Set to false to disable leave notifications
-const minPlayersForNotification = 1; // Minimum players needed to send notifications
+const discordWebhook = "https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch";
+const checkInterval = 15000; // Every 15 seconds
+const sendHourlyUpdates = true;
+const sendDailySummary = true;
+const minPlayersForNotification = 1;
+const enableLeaveNotifications = true;
 // ======================
 
 let lastCount = 0;
 let gameData = {};
+let lastJoinTime = null;
+let lastLeaveTime = null;
+let hourlyCheck = 0;
 let consecutiveErrors = 0;
 const maxConsecutiveErrors = 5;
 
+// === EXPRESS SERVER ===
+app.get("/", (req, res) => {
+  res.send(`<h2>🟢 Roblox Tracker Running</h2><p>Players Online: ${gameData.playing || 0}</p>`);
+});
+
+app.get("/ping", (req, res) => {
+  res.send("✅ Ping OK");
+});
+
+app.listen(port, () => {
+  console.log(`🌐 Web server online at http://localhost:${port}`);
+});
+
+// === CORE TRACKING FUNCTIONS ===
 async function getUniverseId() {
   const url = `https://apis.roproxy.com/universes/v1/places/${placeId}/universe`;
   const res = await axios.get(url);
@@ -24,221 +46,159 @@ async function getGameData(universeId) {
   const res = await axios.get(url);
   const game = res.data.data[0];
   return {
+    name: game.name,
     playing: game.playing,
     visits: game.visits,
-    name: game.name,
     maxPlayers: game.maxPlayers,
     created: game.created,
     updated: game.updated
   };
 }
 
-async function sendJoinNotification(data) {
+function nowISO() {
+  return new Date().toISOString();
+}
+
+function nowLocale() {
+  return new Date().toLocaleString();
+}
+
+async function postToDiscord(embed) {
   await axios.post(discordWebhook, {
     username: "Roblox Player Tracker",
-    embeds: [{
-      title: "🎮 Player Joined!",
-      description: `**${data.name}** now has **${data.playing}** players online.`,
-      color: 0x00ff00,
-      fields: [
-        {
-          name: "👥 Players",
-          value: `${data.playing}/${data.maxPlayers}`,
-          inline: true
-        },
-        {
-          name: "👀 Total Visits",
-          value: data.visits.toLocaleString(),
-          inline: true
-        },
-        {
-          name: "🔗 Play Now",
-          value: `[Click to Play](https://www.roblox.com/games/${placeId})`,
-          inline: true
-        }
-      ],
-      thumbnail: {
-        url: "https://cdn.discordapp.com/emojis/1234567890/game.png" // Generic game icon
-      },
-      timestamp: new Date().toISOString(),
-      footer: {
-        text: "Roblox Player Tracker"
-      }
-    }]
+    embeds: [embed]
   });
 }
 
-async function sendLeaveNotification(data) {
+async function sendJoinEmbed(data) {
+  lastJoinTime = nowLocale();
+  await postToDiscord({
+    title: "🎮 Player Joined!",
+    description: `**${data.name}** now has **${data.playing}** players.`,
+    color: 0x00ff00,
+    fields: [
+      { name: "👥 Online", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👀 Visits", value: data.visits.toLocaleString(), inline: true },
+      { name: "🕓 Time", value: nowLocale(), inline: true }
+    ],
+    footer: { text: "Roblox Join Alert" },
+    timestamp: nowISO()
+  });
+}
+
+async function sendLeaveEmbed(data) {
   if (!enableLeaveNotifications) return;
-
-  await axios.post(discordWebhook, {
-    username: "Roblox Player Tracker",
-    embeds: [{
-      title: "👋 Player Left",
-      description: `**${data.name}** now has **${data.playing}** players online.`,
-      color: 0xff6b6b,
-      fields: [
-        {
-          name: "👥 Players",
-          value: `${data.playing}/${data.maxPlayers}`,
-          inline: true
-        },
-        {
-          name: "👀 Total Visits",
-          value: data.visits.toLocaleString(),
-          inline: true
-        }
-      ],
-      timestamp: new Date().toISOString(),
-      footer: {
-        text: "Roblox Player Tracker"
-      }
-    }]
+  lastLeaveTime = nowLocale();
+  await postToDiscord({
+    title: "👋 Player Left",
+    description: `**${data.name}** now has **${data.playing}** players.`,
+    color: 0xff0000,
+    fields: [
+      { name: "👥 Online", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "🕓 Time", value: nowLocale(), inline: true }
+    ],
+    footer: { text: "Roblox Leave Alert" },
+    timestamp: nowISO()
   });
 }
 
-async function sendStatusUpdate(data) {
-  await axios.post(discordWebhook, {
-    username: "Roblox Player Tracker",
-    embeds: [{
-      title: "📊 Game Status Update",
-      description: `Current status for **${data.name}**`,
-      color: 0x5865f2,
-      fields: [
-        {
-          name: "👥 Current Players",
-          value: `${data.playing}/${data.maxPlayers}`,
-          inline: true
-        },
-        {
-          name: "👀 Total Visits",
-          value: data.visits.toLocaleString(),
-          inline: true
-        },
-        {
-          name: "📅 Last Updated",
-          value: new Date(data.updated).toLocaleDateString(),
-          inline: true
-        },
-        {
-          name: "🔗 Play Now",
-          value: `[Click to Play](https://www.roblox.com/games/${placeId})`,
-          inline: false
-        }
-      ],
-      timestamp: new Date().toISOString(),
-      footer: {
-        text: "Hourly Status Update"
-      }
-    }]
+async function sendHourlyUpdate(data) {
+  if (!sendHourlyUpdates) return;
+  await postToDiscord({
+    title: "📊 Hourly Status Update",
+    description: `**${data.name}** - Current Stats`,
+    color: 0x3498db,
+    fields: [
+      { name: "👥 Players", value: `${data.playing}/${data.maxPlayers}`, inline: true },
+      { name: "👀 Visits", value: data.visits.toLocaleString(), inline: true },
+      { name: "🕒 Time", value: nowLocale(), inline: true }
+    ],
+    footer: { text: "Hourly Update" },
+    timestamp: nowISO()
   });
 }
 
-async function sendErrorNotification(error) {
-  await axios.post(discordWebhook, {
-    username: "Roblox Player Tracker",
-    embeds: [{
-      title: "⚠️ Tracker Error",
-      description: `The player tracker encountered an error and has been temporarily disabled.`,
-      color: 0xff0000,
-      fields: [
-        {
-          name: "Error",
-          value: `\`${error.message}\``,
-          inline: false
-        },
-        {
-          name: "Consecutive Errors",
-          value: consecutiveErrors.toString(),
-          inline: true
-        }
-      ],
-      timestamp: new Date().toISOString()
-    }]
+async function sendDailySummary(data) {
+  if (!sendDailySummary) return;
+  await postToDiscord({
+    title: "📆 Daily Summary",
+    description: `Daily summary for **${data.name}**`,
+    color: 0xf1c40f,
+    fields: [
+      { name: "👥 Final Count", value: `${data.playing}`, inline: true },
+      { name: "⏰ Last Join", value: lastJoinTime || "N/A", inline: true },
+      { name: "⏳ Last Leave", value: lastLeaveTime || "N/A", inline: true }
+    ],
+    footer: { text: "Roblox Tracker" },
+    timestamp: nowISO()
   });
 }
 
+// === MAIN TRACKING LOOP ===
 async function main() {
   try {
     const universeId = await getUniverseId();
     gameData = await getGameData(universeId);
     lastCount = gameData.playing;
+    console.log(`🎮 Now tracking "${gameData.name}"`);
 
-    console.log(`🎮 Tracking "${gameData.name}"`);
-    console.log(`📊 Universe ID: ${universeId}`);
-    console.log(`👥 Current Players: ${gameData.playing}/${gameData.maxPlayers}`);
-    console.log(`👀 Total Visits: ${gameData.visits.toLocaleString()}`);
-    console.log("✅ Bot started successfully!\n");
-
-    // Send hourly status updates
+    // Hourly updater
     setInterval(async () => {
+      hourlyCheck++;
       try {
-        const currentData = await getGameData(universeId);
-        await sendStatusUpdate(currentData);
-        console.log("📊 Sent hourly status update");
+        const current = await getGameData(universeId);
+        await sendHourlyUpdate(current);
+
+        const hour = new Date().getHours();
+        const minute = new Date().getMinutes();
+        if (sendDailySummary && hour === 0 && minute < 10) {
+          await sendDailySummary(current);
+        }
       } catch (err) {
-        console.error("❌ Error sending status update:", err.message);
+        console.error("❌ Hourly update failed:", err.message);
       }
-    }, 3600000); // 1 hour
+    }, 60 * 60 * 1000); // every hour
 
-    // Main tracking loop
+    // Player tracker
     setInterval(async () => {
       try {
-        const currentData = await getGameData(universeId);
-        const currentCount = currentData.playing;
+        const current = await getGameData(universeId);
+        const count = current.playing;
 
-        // Debug logging - show every check
-        console.log(`🔍 Checking... Current: ${currentCount}, Last: ${lastCount}, Time: ${new Date().toLocaleTimeString()}`);
-
-        if (currentCount > lastCount && currentCount >= minPlayersForNotification) {
-          await sendJoinNotification(currentData);
-          console.log(`🎉 SOMEONE JOINED! Players: ${lastCount} → ${currentCount}`);
-          console.log(`👤 New player count: ${currentCount}/${currentData.maxPlayers}`);
-          console.log(`✅ Discord notification sent!`);
-        } else if (currentCount < lastCount && enableLeaveNotifications) {
-          await sendLeaveNotification(currentData);
-          console.log(`👋 Leave detected! Players: ${lastCount} → ${currentCount}`);
-          console.log(`✅ Discord leave notification sent!`);
-        } else if (currentCount === lastCount) {
-          console.log(`⚪ No change detected (${currentCount} players)`);
+        if (count > lastCount && count >= minPlayersForNotification) {
+          await sendJoinEmbed(current);
+        } else if (count < lastCount) {
+          await sendLeaveEmbed(current);
         }
 
-        lastCount = currentCount;
-        gameData = currentData;
-        consecutiveErrors = 0; // Reset error counter on success
+        lastCount = count;
+        gameData = current;
+        consecutiveErrors = 0;
 
       } catch (err) {
         consecutiveErrors++;
-        console.error(`❌ Error (${consecutiveErrors}/${maxConsecutiveErrors}):`, err.message);
+        console.error(`⚠️ Error [${consecutiveErrors}/${maxConsecutiveErrors}]:`, err.message);
 
         if (consecutiveErrors >= maxConsecutiveErrors) {
-          await sendErrorNotification(err);
-          console.error("🛑 Too many consecutive errors. Notifications disabled temporarily.");
+          await postToDiscord({
+            title: "❗ Too Many Errors",
+            description: "Tracker is pausing due to repeated failures.",
+            color: 0xe74c3c,
+            timestamp: nowISO()
+          });
 
-          // Wait 5 minutes before retrying
           setTimeout(() => {
             consecutiveErrors = 0;
-            console.log("🔄 Resetting error counter. Resuming normal operation.");
+            console.log("🔄 Resuming tracking...");
           }, 300000);
         }
       }
     }, checkInterval);
 
   } catch (err) {
-    console.error("💥 Fatal error during initialization:", err.message);
+    console.error("💥 Startup failed:", err.message);
     process.exit(1);
   }
 }
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n👋 Shutting down Roblox Player Tracker...');
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  console.log('\n👋 Shutting down Roblox Player Tracker...');
-  process.exit(0);
-});
 
 main();
