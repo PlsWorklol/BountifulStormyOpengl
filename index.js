@@ -31,7 +31,7 @@ app.get("/ping", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🌐 Web server online at http://localhost:${port}`);
+  console.log(`🌍 Public URL: Visit this app at https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
 });
 
 // === CORE TRACKING FUNCTIONS ===
