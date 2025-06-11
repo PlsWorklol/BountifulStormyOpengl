@@ -8,7 +8,7 @@ const placeId = "10627207685"; // Your Roblox Place ID
 const discordWebhook = "https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch";
 const checkInterval = 15000; // Every 15 seconds
 const sendHourlyUpdates = true;
-const sendDailySummary = true;
+const enableDailySummary = true;
 const minPlayersForNotification = 1;
 const enableLeaveNotifications = true;
 // ======================
@@ -119,7 +119,7 @@ async function sendHourlyUpdate(data) {
 }
 
 async function sendDailySummary(data) {
-  if (!sendDailySummary) return;
+  if (!enableDailySummary) return;
   await postToDiscord({
     title: "📆 Daily Summary",
     description: `Daily summary for **${data.name}**`,
@@ -151,7 +151,7 @@ async function main() {
 
         const hour = new Date().getHours();
         const minute = new Date().getMinutes();
-        if (sendDailySummary && hour === 0 && minute < 10) {
+        if (enableDailySummary && hour === 0 && minute < 10) {
           await sendDailySummary(current);
         }
       } catch (err) {
