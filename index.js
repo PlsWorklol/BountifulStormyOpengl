@@ -1,4 +1,3 @@
-
 const axios = require("axios");
 
 // === CONFIGURATION ===
@@ -71,7 +70,7 @@ async function sendJoinNotification(data) {
 
 async function sendLeaveNotification(data) {
   if (!enableLeaveNotifications) return;
-  
+
   await axios.post(discordWebhook, {
     username: "Roblox Player Tracker",
     embeds: [{
@@ -187,27 +186,35 @@ async function main() {
       try {
         const currentData = await getGameData(universeId);
         const currentCount = currentData.playing;
-        
+
+        // Debug logging - show every check
+        console.log(`🔍 Checking... Current: ${currentCount}, Last: ${lastCount}, Time: ${new Date().toLocaleTimeString()}`);
+
         if (currentCount > lastCount && currentCount >= minPlayersForNotification) {
           await sendJoinNotification(currentData);
-          console.log(`✅ Join detected! Players: ${lastCount} → ${currentCount}`);
+          console.log(`🎉 SOMEONE JOINED! Players: ${lastCount} → ${currentCount}`);
+          console.log(`👤 New player count: ${currentCount}/${currentData.maxPlayers}`);
+          console.log(`✅ Discord notification sent!`);
         } else if (currentCount < lastCount && enableLeaveNotifications) {
           await sendLeaveNotification(currentData);
           console.log(`👋 Leave detected! Players: ${lastCount} → ${currentCount}`);
+          console.log(`✅ Discord leave notification sent!`);
+        } else if (currentCount === lastCount) {
+          console.log(`⚪ No change detected (${currentCount} players)`);
         }
-        
+
         lastCount = currentCount;
         gameData = currentData;
         consecutiveErrors = 0; // Reset error counter on success
-        
+
       } catch (err) {
         consecutiveErrors++;
         console.error(`❌ Error (${consecutiveErrors}/${maxConsecutiveErrors}):`, err.message);
-        
+
         if (consecutiveErrors >= maxConsecutiveErrors) {
           await sendErrorNotification(err);
           console.error("🛑 Too many consecutive errors. Notifications disabled temporarily.");
-          
+
           // Wait 5 minutes before retrying
           setTimeout(() => {
             consecutiveErrors = 0;
