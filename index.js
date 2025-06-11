@@ -1,14 +1,14 @@
-const express = require("express");
+const http = require("http");
 const axios = require("axios");
-const app = express();
-const port = 3000;
+
+const port = process.env.PORT || 3000;
 
 // === CONFIGURATION ===
 const placeId = "10627207685"; // Your Roblox Place ID
 const discordWebhook = "https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch";
 const checkInterval = 15000; // Every 15 seconds
 const sendHourlyUpdates = true;
-const enableDailySummary = true;
+const sendDailySummary = true;
 const minPlayersForNotification = 1;
 const enableLeaveNotifications = true;
 // ======================
@@ -21,17 +21,19 @@ let hourlyCheck = 0;
 let consecutiveErrors = 0;
 const maxConsecutiveErrors = 5;
 
-// === EXPRESS SERVER ===
-app.get("/", (req, res) => {
-  res.send(`<h2>🟢 Roblox Tracker Running</h2><p>Players Online: ${gameData.playing || 0}</p>`);
+// Minimal HTTP server for UptimeRobot
+const server = http.createServer((req, res) => {
+  if (req.url === "/ping") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("OK");
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
 });
 
-app.get("/ping", (req, res) => {
-  res.send("✅ Ping OK");
-});
-
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🌍 Public URL: Visit this app at https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+server.listen(port, () => {
+  console.log(`🌐 Server listening on port ${port}`);
 });
 
 // === CORE TRACKING FUNCTIONS ===
@@ -118,8 +120,8 @@ async function sendHourlyUpdate(data) {
   });
 }
 
-async function sendDailySummary(data) {
-  if (!enableDailySummary) return;
+async function sendDailySummaryEmbed(data) {
+  if (!sendDailySummary) return;
   await postToDiscord({
     title: "📆 Daily Summary",
     description: `Daily summary for **${data.name}**`,
@@ -144,15 +146,14 @@ async function main() {
 
     // Hourly updater
     setInterval(async () => {
-      hourlyCheck++;
       try {
         const current = await getGameData(universeId);
         await sendHourlyUpdate(current);
 
-        const hour = new Date().getHours();
-        const minute = new Date().getMinutes();
-        if (enableDailySummary && hour === 0 && minute < 10) {
-          await sendDailySummary(current);
+        // At midnight, send daily summary
+        const now = new Date();
+        if (sendDailySummary && now.getHours() === 0 && now.getMinutes() < 10) {
+          await sendDailySummaryEmbed(current);
         }
       } catch (err) {
         console.error("❌ Hourly update failed:", err.message);
