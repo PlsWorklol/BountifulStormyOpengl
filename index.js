@@ -15,13 +15,13 @@ let consecutiveErrors = 0;
 const maxConsecutiveErrors = 5;
 
 async function getUniverseId() {
-  const url = `https://apis.roblox.com/universes/v1/places/${placeId}/universe`;
+  const url = `https://apis.roproxy.com/universes/v1/places/${placeId}/universe`;
   const res = await axios.get(url);
   return res.data.universeId;
 }
 
 async function getGameData(universeId) {
-  const url = `https://games.roblox.com/v1/games?universeIds=${universeId}`;
+  const url = `https://games.roproxy.com/v1/games?universeIds=${universeId}`;
   const res = await axios.get(url);
   const game = res.data.data[0];
   return {
