@@ -11,6 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^22.13.11",
-    "axios": "^1.9.0",
+    "axios": "^1.9.0"
   }
 }
