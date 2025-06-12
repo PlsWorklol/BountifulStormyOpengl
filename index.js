@@ -4,7 +4,7 @@ const axios = require("axios");
 const port = process.env.PORT || 3000;
 
 // === CONFIGURATION ===
-const placeId = "4924922222 "; // Your Roblox Place ID
+const placeId = "10627207685"; // Your Roblox Place ID
 const discordWebhook = "https://discord.com/api/webhooks/1382462195937447947/7NNEJ8ES24KjbFKv8n2BrohDB7-tf-hKrupgqqHCY2eYMm2-1pmQGmcwgA9X4aZJ3jch";
 const checkInterval = 15000; // Every 15 seconds
 const sendHourlyUpdates = true;
